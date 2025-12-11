@@ -1,0 +1,23 @@
+@import "tailwindcss";
+
+:root {
+  color-scheme: light;
+  --foreground: #111827;
+  --muted: #4b5563;
+  --surface: #f8fafc;
+}
+
+body {
+  background: radial-gradient(circle at 20% 20%, #eef3ff 0, #f8fbff 25%, #ffffff 55%);
+  color: var(--foreground);
+  font-family: var(--font-geist-sans), system-ui, -apple-system, sans-serif;
+  min-height: 100vh;
+}
+
+a {
+  color: inherit;
+}
+
+.text-muted {
+  color: var(--muted);
+}
