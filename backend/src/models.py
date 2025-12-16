@@ -34,3 +34,10 @@ class HealthResponse(BaseModel):
     """Response model for GET /health endpoint."""
     status: str = Field(..., description="Health status")
     message: str = Field(..., description="Health message")
+
+
+class ErrorResponse(BaseModel):
+    """Structured error response model."""
+    error: str = Field(..., description="Error type or code")
+    message: str = Field(..., description="Human-readable error message")
+    detail: Optional[str] = Field(None, description="Additional error details")
