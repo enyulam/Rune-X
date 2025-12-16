@@ -16,7 +16,7 @@ export function Badge({
 }: PropsWithChildren<{ tone?: Tone; className?: string }>) {
   return (
     <span
-      className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-semibold ${toneStyles[tone]} ${className ?? ""}`}
+      className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-semibold sm:px-3 sm:py-1 ${toneStyles[tone]} ${className ?? ""}`}
     >
       {children}
     </span>

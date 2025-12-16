@@ -3,11 +3,12 @@
 import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { Badge } from "@/components/Badge";
-import { PrimaryButton, SecondaryButton } from "@/components/Buttons";
-import { Card } from "@/components/Card";
-import { Table, TableRow } from "@/components/Table";
-import { OcrResult, fetchResult } from "@/services/api";
+import { Button } from "@/components/ui/Button";
+import { Badge } from "@/components/ui/Badge";
+import { Card } from "@/components/ui/Card";
+import { Table, TableRow } from "@/components/ui/Table";
+import { PageHeader } from "@/components/PageHeader";
+import { OCRResponse, fetchResult } from "@/services/api";
 
 export default function ResultsPage() {
   const router = useRouter();
@@ -15,7 +16,7 @@ export default function ResultsPage() {
   const imageId = useMemo(() => params?.image_id ?? "demo-image", [params]);
 
   const [preview, setPreview] = useState<string | null>(null);
-  const [result, setResult] = useState<OcrResult | null>(null);
+  const [result, setResult] = useState<OCRResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -31,6 +32,7 @@ export default function ResultsPage() {
         if (!active) return;
         setResult(data);
       } catch (err) {
+        // Error toast is handled in api.ts
         console.error(err);
         setError("Unable to load results. Please retry.");
       } finally {
@@ -57,27 +59,24 @@ export default function ResultsPage() {
   };
 
   return (
-    <main className="mx-auto flex min-h-screen max-w-6xl flex-col gap-8 px-6 py-12">
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div className="space-y-2">
-          <Badge tone="info">Results ready</Badge>
-          <h1 className="text-3xl font-bold text-gray-900">OCR & translation</h1>
-          <p className="text-gray-600">
-            Preview your upload and inspect extracted text, per-character meanings, and the
-            translated sentence.
-          </p>
-        </div>
-        <div className="flex gap-3">
-          <SecondaryButton type="button" onClick={() => router.push("/")}>
-            New upload
-          </SecondaryButton>
-          <PrimaryButton type="button" onClick={handleExportJson} disabled={!result}>
-            Export JSON
-          </PrimaryButton>
-        </div>
-      </div>
+    <main className="mx-auto min-h-screen max-w-6xl px-4 py-6 sm:px-6 sm:py-8 lg:px-6 lg:py-12">
+      <PageHeader
+        badge="Results ready"
+        title="OCR & translation"
+        description="Preview your upload and inspect extracted text, per-character meanings, and the translated sentence."
+        actions={
+          <div className="flex flex-wrap gap-2 sm:gap-3">
+            <Button variant="secondary" type="button" onClick={() => router.push("/")}>
+              New upload
+            </Button>
+            <Button type="button" onClick={handleExportJson} disabled={!result}>
+              Export JSON
+            </Button>
+          </div>
+        }
+      />
 
-      <div className="grid gap-6 lg:grid-cols-[1.1fr_1.3fr]">
+      <div className="grid gap-4 sm:gap-6 lg:grid-cols-[1.1fr_1.3fr]">
         <Card title="Uploaded image" subtitle={`Image ID: ${imageId}`}>
           <div className="relative aspect-[4/3] w-full overflow-hidden rounded-lg border border-gray-100 bg-gray-50">
             {preview ? (
@@ -90,7 +89,7 @@ export default function ResultsPage() {
                 priority
               />
             ) : (
-              <div className="flex h-full items-center justify-center text-gray-500">
+              <div className="flex h-full items-center justify-center text-xs text-gray-500 sm:text-sm">
                 Preview not available
               </div>
             )}
@@ -106,20 +105,20 @@ export default function ResultsPage() {
             </Badge>
           }
         >
-          {error && <p className="mb-4 text-sm text-amber-700">{error}</p>}
-          {loading && <p className="text-sm text-gray-600">Loading…</p>}
+          {error && <p className="mb-3 text-xs text-amber-700 sm:mb-4 sm:text-sm">{error}</p>}
+          {loading && <p className="text-xs text-gray-600 sm:text-sm">Loading…</p>}
           {!loading && result && (
-            <div className="space-y-6">
+            <div className="space-y-4 sm:space-y-6">
               <div>
-                <p className="text-sm font-semibold text-gray-700">Extracted text</p>
-                <p className="mt-2 rounded-lg bg-gray-50 p-3 text-base text-gray-900">
+                <p className="text-xs font-semibold text-gray-700 sm:text-sm">Extracted text</p>
+                <p className="mt-2 rounded-lg bg-gray-50 p-2 text-sm text-gray-900 sm:p-3 sm:text-base">
                   {result.text}
                 </p>
               </div>
 
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <p className="text-sm font-semibold text-gray-700">Characters</p>
+              <div className="space-y-2 sm:space-y-3">
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                  <p className="text-xs font-semibold text-gray-700 sm:text-sm">Characters</p>
                   <Badge tone="neutral">{result.characters.length} entries</Badge>
                 </div>
                 <Table headers={["Character", "Pinyin", "Meaning", "Confidence"]}>
@@ -130,11 +129,19 @@ export default function ResultsPage() {
                         {
                           key: "char",
                           content: (
-                            <span className="text-lg font-semibold text-gray-900">{row.char}</span>
+                            <span className="text-base font-semibold text-gray-900 sm:text-lg">
+                              {row.char}
+                            </span>
                           ),
                         },
-                        { key: "pinyin", content: <span className="text-gray-700">{row.pinyin}</span> },
-                        { key: "meaning", content: <span className="text-gray-700">{row.meaning}</span> },
+                        {
+                          key: "pinyin",
+                          content: <span className="text-gray-700">{row.pinyin}</span>,
+                        },
+                        {
+                          key: "meaning",
+                          content: <span className="text-gray-700">{row.english}</span>,
+                        },
                         {
                           key: "confidence",
                           content: (
@@ -150,8 +157,10 @@ export default function ResultsPage() {
               </div>
 
               <div>
-                <p className="text-sm font-semibold text-gray-700">Full sentence translation</p>
-                <p className="mt-2 rounded-lg bg-primary-light px-3 py-2 text-gray-900">
+                <p className="text-xs font-semibold text-gray-700 sm:text-sm">
+                  Full sentence translation
+                </p>
+                <p className="mt-2 rounded-lg bg-primary-light px-2 py-1.5 text-sm text-gray-900 sm:px-3 sm:py-2 sm:text-base">
                   {result.translation}
                 </p>
               </div>
@@ -162,4 +171,3 @@ export default function ResultsPage() {
     </main>
   );
 }
-

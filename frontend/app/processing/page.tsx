@@ -2,9 +2,11 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Badge } from "@/components/Badge";
-import { PrimaryButton, SecondaryButton } from "@/components/Buttons";
-import { Card } from "@/components/Card";
+import { Button } from "@/components/ui/Button";
+import { Card } from "@/components/ui/Card";
+import { PageHeader } from "@/components/PageHeader";
+import { ProgressSpinner } from "@/components/ProgressSpinner";
+import { ProgressBar } from "@/components/ProgressBar";
 import { fetchJobStatus } from "@/services/api";
 
 export default function ProcessingPage() {
@@ -33,6 +35,7 @@ export default function ProcessingPage() {
           setError("Processing failed. Please try again.");
         }
       } catch (err) {
+        // Error toast is handled in api.ts
         console.error(err);
         setError("Unable to reach the server. Retrying...");
       }
@@ -45,58 +48,42 @@ export default function ProcessingPage() {
   }, [fallbackImageId, jobId, router, status]);
 
   return (
-    <main className="mx-auto flex min-h-screen max-w-4xl flex-col gap-8 px-6 py-12">
-      <div className="flex flex-col gap-3">
-        <Badge tone="info">Processing image</Badge>
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Working on your OCR results</h1>
-          <p className="text-gray-600">
-            We are extracting characters, meanings, and a full-sentence translation. This
-            usually takes a few seconds.
-          </p>
-        </div>
-      </div>
+    <main className="mx-auto min-h-screen max-w-4xl px-4 py-6 sm:px-6 sm:py-8 lg:px-6 lg:py-12">
+      <PageHeader
+        badge="Processing image"
+        title="Working on your OCR results"
+        description="We are extracting characters, meanings, and a full-sentence translation. This usually takes a few seconds."
+      />
       <Card>
-        <div className="flex items-center gap-4">
-          <div className="relative h-14 w-14">
-            <div className="absolute inset-0 animate-spin rounded-full border-4 border-primary/20 border-t-primary" />
-            <div className="absolute inset-2 rounded-full bg-primary-light" />
-          </div>
-          <div>
-            <p className="text-lg font-semibold text-gray-900">
-              Job ID: <span className="font-mono text-primary">{jobId}</span>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
+          <ProgressSpinner />
+          <div className="min-w-0 flex-1">
+            <p className="text-base font-semibold text-gray-900 sm:text-lg">
+              Job ID: <span className="break-all font-mono text-primary">{jobId}</span>
             </p>
-            <p className="text-sm text-gray-600">
+            <p className="mt-1 text-xs text-gray-600 sm:text-sm">
               Polling the backend every second for completion status.
             </p>
           </div>
         </div>
 
-        <div className="mt-8 space-y-3">
-          <div className="flex items-center justify-between text-sm text-gray-700">
-            <span>Progress</span>
-            <span>{progress}%</span>
-          </div>
-          <div className="h-3 w-full overflow-hidden rounded-full bg-gray-100">
-            <div
-              className="h-full rounded-full bg-primary transition-all"
-              style={{ width: `${progress}%` }}
-            />
-          </div>
-          <p className="text-xs text-gray-500">We will redirect you once processing completes.</p>
-          {error && <p className="text-sm text-amber-700">{error}</p>}
+        <div className="mt-6 space-y-3 sm:mt-8">
+          <ProgressBar progress={progress} label="Progress" />
+          <p className="text-xs text-gray-500 sm:text-sm">
+            We will redirect you once processing completes.
+          </p>
+          {error && <p className="text-xs text-amber-700 sm:text-sm">{error}</p>}
         </div>
 
-        <div className="mt-10 flex gap-3">
-          <SecondaryButton type="button" onClick={() => router.push("/")}>
+        <div className="mt-6 flex flex-wrap gap-2 sm:mt-10 sm:gap-3">
+          <Button variant="secondary" type="button" onClick={() => router.push("/")}>
             Start a new upload
-          </SecondaryButton>
-          <PrimaryButton type="button" onClick={() => router.refresh()}>
+          </Button>
+          <Button type="button" onClick={() => router.refresh()}>
             Refresh now
-          </PrimaryButton>
+          </Button>
         </div>
       </Card>
     </main>
   );
 }
-

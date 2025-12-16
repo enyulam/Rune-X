@@ -7,12 +7,12 @@ type TableProps = {
 
 export function Table({ headers, children, footer }: PropsWithChildren<TableProps>) {
   return (
-    <div className="overflow-hidden rounded-xl border border-gray-200 bg-white">
+    <div className="overflow-x-auto overflow-hidden rounded-xl border border-gray-200 bg-white">
       <table className="min-w-full divide-y divide-gray-200 text-sm">
         <thead className="bg-gray-50 text-left text-gray-600">
           <tr>
             {headers.map((header) => (
-              <th key={header} scope="col" className="px-4 py-3 font-medium">
+              <th key={header} scope="col" className="px-3 py-2 font-medium sm:px-4 sm:py-3">
                 {header}
               </th>
             ))}
@@ -22,7 +22,7 @@ export function Table({ headers, children, footer }: PropsWithChildren<TableProp
         {footer && (
           <tfoot className="bg-gray-50">
             <tr>
-              <td colSpan={headers.length} className="px-4 py-3 text-right text-gray-500">
+              <td colSpan={headers.length} className="px-3 py-2 text-right text-gray-500 sm:px-4 sm:py-3">
                 {footer}
               </td>
             </tr>
@@ -46,7 +46,7 @@ export function TableRow({ cells }: TableRowProps) {
   return (
     <tr className="hover:bg-gray-50">
       {cells.map((cell, idx) => (
-        <td key={cell.key ?? idx} className="px-4 py-3 align-top">
+        <td key={cell.key ?? idx} className="px-3 py-2 align-top sm:px-4 sm:py-3">
           {cell.content}
         </td>
       ))}

@@ -1,7 +1,7 @@
 "use client";
 
 import { ChangeEvent, DragEvent, useCallback, useRef, useState } from "react";
-import { SecondaryButton } from "./Buttons";
+import { Button } from "@/components/ui/Button";
 
 type UploadDropzoneProps = {
   onFileSelected: (file: File) => void;
@@ -37,17 +37,17 @@ export function UploadDropzone({
   );
 
   const handleDrop = (event: DragEvent<HTMLDivElement>) => {
-      event.preventDefault();
-      if (disabled) return;
-      setIsDragging(false);
-      const [file] = Array.from(event.dataTransfer.files);
-      validateAndSend(file);
+    event.preventDefault();
+    if (disabled) return;
+    setIsDragging(false);
+    const [file] = Array.from(event.dataTransfer.files);
+    validateAndSend(file);
   };
 
   const handleDragOver = (event: DragEvent<HTMLDivElement>) => {
-      event.preventDefault();
-      if (disabled) return;
-      setIsDragging(true);
+    event.preventDefault();
+    if (disabled) return;
+    setIsDragging(true);
   };
 
   const handleDragLeave = () => setIsDragging(false);
@@ -60,7 +60,7 @@ export function UploadDropzone({
   return (
     <div className="space-y-3">
       <div
-        className={`flex flex-col items-center justify-center gap-4 rounded-2xl border-2 border-dashed px-6 py-12 text-center transition-colors ${
+        className={`flex flex-col items-center justify-center gap-3 rounded-2xl border-2 border-dashed px-4 py-8 text-center transition-colors sm:gap-4 sm:px-6 sm:py-12 ${
           isDragging ? "border-primary bg-primary-light/50" : "border-gray-200 bg-white"
         } ${disabled ? "cursor-not-allowed opacity-70" : "cursor-pointer"}`}
         onDrop={handleDrop}
@@ -68,8 +68,8 @@ export function UploadDropzone({
         onDragLeave={handleDragLeave}
         onClick={() => !disabled && inputRef.current?.click()}
       >
-        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary-light">
-          <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
+        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary-light sm:h-12 sm:w-12">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" className="sm:w-7 sm:h-7">
             <path
               d="M12 3v12m0-12 4 4m-4-4-4 4M4 15v3a3 3 0 0 0 3 3h10a3 3 0 0 0 3-3v-3"
               stroke="#0066ff"
@@ -80,14 +80,14 @@ export function UploadDropzone({
           </svg>
         </div>
         <div className="space-y-1">
-          <p className="text-lg font-semibold text-gray-900">Drag & drop your image</p>
-          <p className="text-sm text-gray-600">
-            JPG or PNG only. Max 10MB. We’ll keep your file local while processing.
+          <p className="text-base font-semibold text-gray-900 sm:text-lg">Drag & drop your image</p>
+          <p className="text-xs text-gray-600 sm:text-sm">
+            JPG or PNG only. Max 10MB. We&apos;ll keep your file local while processing.
           </p>
         </div>
-        <SecondaryButton type="button" disabled={disabled}>
+        <Button variant="secondary" type="button" disabled={disabled}>
           Browse files
-        </SecondaryButton>
+        </Button>
         <input
           ref={inputRef}
           type="file"
@@ -98,9 +98,8 @@ export function UploadDropzone({
         />
       </div>
       {(localError || error) && (
-        <p className="text-sm text-amber-700">{localError ?? error}</p>
+        <p className="text-xs text-amber-700 sm:text-sm">{localError ?? error}</p>
       )}
     </div>
   );
 }
-
