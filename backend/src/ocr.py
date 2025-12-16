@@ -3,6 +3,7 @@ import io
 import logging
 from typing import List, Tuple
 
+import numpy as np
 from PIL import Image
 
 logger = logging.getLogger(__name__)
@@ -72,11 +73,14 @@ class OCRProcessor:
             # Convert to RGB if necessary
             if image.mode != 'RGB':
                 image = image.convert('RGB')
+
+            # Convert PIL Image to numpy array for EasyOCR
+            img_array = np.array(image)
             
-            # Perform OCR using EasyOCR (accepts numpy array or PIL Image or path)
+            # Perform OCR using EasyOCR (expects bytes, numpy array, or file path/url)
             try:
                 # EasyOCR format: [ [bbox, text, confidence], ... ]
-                results = self.reader.readtext(image)
+                results = self.reader.readtext(img_array)
                 logger.debug(
                     "EasyOCR results type: %s, length: %s",
                     type(results),
