@@ -157,10 +157,18 @@ def validate_image_file(filename: str, file_size: int) -> Tuple[bool, Optional[s
     """
     from src.config import ALLOWED_EXTENSIONS, MAX_FILE_SIZE
     
+    # Handle None or empty filename
+    if not filename:
+        return False, "Filename is required"
+    
     # Check file extension
-    ext = Path(filename).suffix.lower()
-    if ext not in ALLOWED_EXTENSIONS:
-        return False, f"File type {ext} not allowed. Allowed types: {', '.join(ALLOWED_EXTENSIONS)}"
+    try:
+        ext = Path(filename).suffix.lower()
+        if not ext or ext not in ALLOWED_EXTENSIONS:
+            return False, f"File type {ext or '(no extension)'} not allowed. Allowed types: {', '.join(ALLOWED_EXTENSIONS)}"
+    except Exception as e:
+        logger.warning(f"Error parsing filename '{filename}': {e}")
+        return False, f"Invalid filename format: {filename}"
     
     # Check file size
     if file_size > MAX_FILE_SIZE:

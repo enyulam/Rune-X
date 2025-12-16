@@ -37,11 +37,21 @@ export async function submitImage(
       headers: { "Content-Type": "multipart/form-data" },
     });
 
-    return response.data;
+    // Backend returns ProcessResponse with image_id immediately
+    // Return it as both jobId and imageId for compatibility
+    const imageId = response.data.image_id;
+    return { jobId: imageId, imageId };
   } catch (error) {
-    const message = axios.isAxiosError(error)
-      ? error.response?.data?.message || "Upload failed. Please try again."
-      : "Upload failed. Please try again.";
+    let message = "Upload failed. Please try again.";
+    if (axios.isAxiosError(error)) {
+      // Try to extract error message from different response formats
+      const errorData = error.response?.data;
+      if (errorData) {
+        message = errorData.message || errorData.detail?.message || errorData.detail || message;
+        // Log full error for debugging
+        console.error("Backend error:", errorData);
+      }
+    }
     toast.error(message);
     throw error;
   }
@@ -58,15 +68,21 @@ export async function fetchJobStatus(
       : { status: "processing", progress };
   }
 
+  // Backend processes immediately, so check if results exist
   try {
-    const response = await api.get(`/process/${jobId}`);
-    return response.data;
+    const response = await api.get(`/results/${jobId}`);
+    // If we can fetch results, processing is done
+    return { status: "done", progress: 100, imageId: jobId };
   } catch (error) {
+    // If 404, still processing; otherwise failed
+    if (axios.isAxiosError(error) && error.response?.status === 404) {
+      return { status: "processing", progress: 50 };
+    }
     const message = axios.isAxiosError(error)
-      ? error.response?.data?.message || "Unable to check job status."
+      ? error.response?.data?.message || error.response?.data?.detail?.message || "Unable to check job status."
       : "Unable to check job status.";
     toast.error(message);
-    throw error;
+    return { status: "failed" };
   }
 }
 
@@ -78,10 +94,17 @@ export async function fetchResult(imageId: string): Promise<OCRResponse> {
 
   try {
     const response = await api.get(`/results/${imageId}`);
-    return response.data;
+    // Backend returns ResultResponse with original_text, map to text for frontend
+    const data = response.data;
+    return {
+      image_id: data.image_id,
+      text: data.original_text,
+      characters: data.characters,
+      translation: data.translation,
+    };
   } catch (error) {
     const message = axios.isAxiosError(error)
-      ? error.response?.data?.message || "Unable to load results. Please retry."
+      ? error.response?.data?.message || error.response?.data?.detail?.message || "Unable to load results. Please retry."
       : "Unable to load results. Please retry.";
     toast.error(message);
     throw error;

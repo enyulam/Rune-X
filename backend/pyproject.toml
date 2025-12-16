@@ -1,0 +1,17 @@
+[tool.pylint.main]
+init-hook='import sys; sys.path.insert(0, ".")'
+
+[tool.pylint.messages_control]
+disable = [
+    "import-error",  # False positives for src.* imports
+    "logging-fstring-interpolation",  # f-strings are fine for logging
+    "broad-exception-caught",  # We intentionally catch broad exceptions
+    "trailing-whitespace",  # Auto-formatters handle this
+    "line-too-long",  # Modern screens can handle longer lines
+    "wrong-import-order",  # Auto-formatters handle this
+    "unused-import",  # Some imports are for type hints
+    "unused-argument",  # Some arguments are required by FastAPI
+    "global-statement",  # Required for module-level state
+    "raise-missing-from",  # We handle exceptions appropriately
+    "import-outside-toplevel",  # Some imports are conditional
+]

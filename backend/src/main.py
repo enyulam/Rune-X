@@ -1,24 +1,32 @@
 """FastAPI main application with enhanced error handling and logging."""
-import os
+import json
 import logging
-from pathlib import Path
+import os
 from typing import Optional
-from fastapi import FastAPI, File, UploadFile, HTTPException, status, Request
+
+import jieba
+from fastapi import FastAPI, File, HTTPException, Request, UploadFile, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-import jieba
 
-from src.config import UPLOAD_DIR, RESULTS_DIR, CEDICT_PATH, MAX_FILE_SIZE
+from src.config import CEDICT_PATH, MAX_FILE_SIZE, PADDLE_LANG, RESULTS_DIR, UPLOAD_DIR
 from src.models import (
-    ProcessResponse, ResultResponse, HealthResponse, CharacterData, ErrorResponse
+    CharacterData,
+    ErrorResponse,
+    HealthResponse,
+    ProcessResponse,
+    ResultResponse,
 )
 from src.ocr import OCRProcessor
 from src.translate import Translator
 from src.utils import (
-    load_cedict, get_pinyin, get_char_english, 
-    generate_image_id, validate_image_file, validate_mime_type
+    generate_image_id,
+    get_char_english,
+    get_pinyin,
+    load_cedict,
+    validate_image_file,
+    validate_mime_type,
 )
-import json
 
 # Configure logging
 LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO").upper()
@@ -60,7 +68,7 @@ cedict: dict = {}
 
 
 @app.exception_handler(Exception)
-async def global_exception_handler(request: Request, exc: Exception):
+async def global_exception_handler(_request: Request, exc: Exception):
     """
     Global exception handler for unhandled exceptions.
     
@@ -93,8 +101,9 @@ async def startup_event():
     
     # Initialize OCR processor with error handling
     try:
-        ocr_processor = OCRProcessor()
-        logger.info("OCR processor initialized successfully")
+        # Use Chinese language model explicitly
+        ocr_processor = OCRProcessor(lang=PADDLE_LANG)
+        logger.info(f"OCR processor initialized successfully with language: {PADDLE_LANG}")
     except ImportError as e:
         logger.warning(f"PaddleOCR not available: {e}")
         ocr_processor = None
@@ -167,6 +176,8 @@ async def process_image(file: UploadFile = File(...)):
     image_path = None
     
     try:
+        # Log incoming request
+        logger.info(f"Received upload request - filename: {file.filename}, content_type: {file.content_type}")
         # Check if OCR processor is available
         if ocr_processor is None:
             logger.error("OCR processor not available")
@@ -183,6 +194,11 @@ async def process_image(file: UploadFile = File(...)):
         contents = await file.read()
         file_size = len(contents)
         
+        # Handle missing filename
+        filename = file.filename or "uploaded_file"
+        if not file.filename:
+            logger.warning("File uploaded without filename, using default")
+        
         # Validate file size
         if file_size > MAX_FILE_SIZE:
             logger.warning(f"File size {file_size} exceeds maximum {MAX_FILE_SIZE}")
@@ -196,7 +212,7 @@ async def process_image(file: UploadFile = File(...)):
             )
         
         # Validate file extension
-        is_valid, error_msg = validate_image_file(file.filename, file_size)
+        is_valid, error_msg = validate_image_file(filename, file_size)
         if not is_valid:
             logger.warning(f"File validation failed: {error_msg}")
             raise HTTPException(
@@ -204,7 +220,7 @@ async def process_image(file: UploadFile = File(...)):
                 detail={
                     "error": "InvalidFileType",
                     "message": error_msg,
-                    "detail": f"Filename: {file.filename}"
+                    "detail": f"Filename: {filename}"
                 }
             )
         
@@ -233,29 +249,61 @@ async def process_image(file: UploadFile = File(...)):
         
         # Run OCR with error handling
         try:
+            logger.debug(f"Starting OCR processing for {image_id}")
             original_text, char_confidence = ocr_processor.process_image(contents)
-            logger.info(f"OCR completed for {image_id}, extracted {len(original_text)} characters")
+            logger.info(f"OCR completed for {image_id}, extracted {len(original_text)} characters, {len(char_confidence)} character entries")
+        except ValueError as e:
+            logger.error(f"Image format error for {image_id}: {e}", exc_info=True)
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail={
+                    "error": "InvalidImageFormat",
+                    "message": "The uploaded file is not a valid image",
+                    "detail": str(e)
+                }
+            )
         except Exception as e:
             logger.error(f"OCR processing failed for {image_id}: {e}", exc_info=True)
+            error_msg = str(e)
+            # Provide more user-friendly error messages
+            if "OCR" in error_msg or "paddle" in error_msg.lower():
+                user_message = "OCR processing failed. Please ensure the image contains readable text."
+            else:
+                user_message = "Failed to process image. Please try again with a different image."
+            
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail={
                     "error": "OCRProcessingError",
-                    "message": "Failed to process image with OCR",
-                    "detail": str(e)
+                    "message": user_message,
+                    "detail": error_msg if os.getenv("LOG_LEVEL", "").upper() == "DEBUG" else None
                 }
             )
         
         if not original_text:
             logger.info(f"No text detected in image {image_id}")
-            return ProcessResponse(
-                image_id=image_id,
-                original_text="",
-                segmented_text=[],
-                characters=[],
-                translation="",
-                message="No text detected in image"
-            )
+
+            # Build a minimal result payload so /results/{image_id} still works
+            empty_result = {
+                "image_id": image_id,
+                # Explicitly surface the state in the extracted text field
+                "original_text": "no text detected",
+                "segmented_text": [],
+                "characters": [],
+                "translation": "",
+                "message": "No text detected in image",
+            }
+
+            # Persist the empty result so GET /results/{image_id} returns a meaningful response
+            result_path = RESULTS_DIR / f"{image_id}.json"
+            try:
+                with open(result_path, "w", encoding="utf-8") as f:
+                    json.dump(empty_result, f, ensure_ascii=False, indent=2)
+                logger.info(f"Empty results saved for {image_id} (no text detected)")
+            except Exception as e:
+                logger.error(f"Failed to save empty results for {image_id}: {e}", exc_info=True)
+
+            return ProcessResponse(**empty_result)
         
         # Segment with jieba
         try:
@@ -268,16 +316,23 @@ async def process_image(file: UploadFile = File(...)):
         # Process each character
         characters = []
         for char, confidence in char_confidence:
-            if char.strip():  # Skip whitespace
+            if char and char.strip():  # Skip whitespace and None
                 try:
                     pinyin = get_pinyin(char)
                     english = get_char_english(char, cedict)
                     
+                    # Ensure confidence is a valid float
+                    try:
+                        conf_float = float(confidence) if confidence is not None else 0.9
+                        conf_float = max(0.0, min(1.0, conf_float))  # Clamp between 0 and 1
+                    except (ValueError, TypeError):
+                        conf_float = 0.9
+                    
                     characters.append(CharacterData(
                         char=char,
-                        pinyin=pinyin,
+                        pinyin=pinyin or "",
                         english=english,
-                        confidence=confidence
+                        confidence=conf_float
                     ))
                 except Exception as e:
                     logger.warning(f"Failed to process character '{char}': {e}")
@@ -296,33 +351,89 @@ async def process_image(file: UploadFile = File(...)):
             logger.warning("Translator not available")
             translation = "[Translation unavailable]"
         
-        # Prepare response
-        result_data = {
-            "image_id": image_id,
-            "original_text": original_text,
-            "segmented_text": segmented_text,
-            "characters": [char.dict() for char in characters],
-            "translation": translation
-        }
-        
-        # Save result to JSON
-        result_path = RESULTS_DIR / f"{image_id}.json"
+        # Prepare response data
         try:
-            with open(result_path, "w", encoding="utf-8") as f:
-                json.dump(result_data, f, ensure_ascii=False, indent=2)
-            logger.info(f"Results saved for {image_id}")
+            # Convert characters to dict format for JSON serialization
+            characters_dict = []
+            for char in characters:
+                try:
+                    # Try Pydantic v2 model_dump first, then v1 dict()
+                    if hasattr(char, 'model_dump'):
+                        char_dict = char.model_dump()
+                    elif hasattr(char, 'dict'):
+                        char_dict = char.dict()
+                    else:
+                        # Fallback: create dict manually
+                        char_dict = {
+                            "char": getattr(char, 'char', ''),
+                            "pinyin": getattr(char, 'pinyin', ''),
+                            "english": getattr(char, 'english', None),
+                            "confidence": getattr(char, 'confidence', 0.9)
+                        }
+                    characters_dict.append(char_dict)
+                except Exception as e:
+                    logger.warning(f"Failed to serialize character {getattr(char, 'char', 'unknown')}: {e}")
+                    # Create a simple dict as fallback
+                    characters_dict.append({
+                        "char": getattr(char, 'char', ''),
+                        "pinyin": getattr(char, 'pinyin', ''),
+                        "english": getattr(char, 'english', None),
+                        "confidence": float(getattr(char, 'confidence', 0.9))
+                    })
+            
+            result_data = {
+                "image_id": image_id,
+                "original_text": original_text,
+                "segmented_text": segmented_text,
+                "characters": characters_dict,
+                "translation": translation
+            }
+            
+            # Save result to JSON
+            result_path = RESULTS_DIR / f"{image_id}.json"
+            try:
+                with open(result_path, "w", encoding="utf-8") as f:
+                    json.dump(result_data, f, ensure_ascii=False, indent=2)
+                logger.info(f"Results saved for {image_id}")
+            except Exception as e:
+                logger.error(f"Failed to save results for {image_id}: {e}", exc_info=True)
+                # Continue anyway - results are still returned
+            
+            # Create and return response
+            try:
+                # Validate characters before creating response
+                validated_characters = []
+                for char in characters:
+                    try:
+                        # Ensure all required fields are present and valid
+                        validated_char = CharacterData(
+                            char=str(char.char) if char.char else "",
+                            pinyin=str(char.pinyin) if char.pinyin else "",
+                            english=char.english if char.english else None,
+                            confidence=float(char.confidence) if char.confidence is not None else 0.9
+                        )
+                        validated_characters.append(validated_char)
+                    except Exception as e:
+                        logger.warning(f"Skipping invalid character data: {e}")
+                        continue
+                
+                response = ProcessResponse(
+                    image_id=image_id,
+                    original_text=original_text or "",
+                    segmented_text=segmented_text or [],
+                    characters=validated_characters,
+                    translation=translation or "",
+                    message="Image processed successfully"
+                )
+                logger.info(f"Successfully processed image {image_id}")
+                return response
+            except Exception as e:
+                logger.error(f"Failed to create ProcessResponse: {type(e).__name__}: {e}", exc_info=True)
+                # Re-raise to be caught by outer exception handler
+                raise
         except Exception as e:
-            logger.error(f"Failed to save results for {image_id}: {e}", exc_info=True)
-            # Continue anyway - results are still returned
-        
-        return ProcessResponse(
-            image_id=image_id,
-            original_text=original_text,
-            segmented_text=segmented_text,
-            characters=characters,
-            translation=translation,
-            message="Image processed successfully"
-        )
+            logger.error(f"Error preparing response for {image_id}: {e}", exc_info=True)
+            raise
     
     except HTTPException:
         # Re-raise HTTP exceptions as-is
@@ -336,14 +447,20 @@ async def process_image(file: UploadFile = File(...)):
             except Exception as cleanup_error:
                 logger.error(f"Failed to clean up file {image_path}: {cleanup_error}")
         
-        logger.error(f"Unexpected error processing image: {e}", exc_info=True)
+        error_detail = str(e)
+        error_type = type(e).__name__
+        logger.error(f"Unexpected error processing image: {error_type}: {error_detail}", exc_info=True)
+        
+        # Return structured error response with more details
+        error_response = {
+            "error": "ProcessingError",
+            "message": "An error occurred while processing the image",
+            "detail": error_detail  # Always include detail for debugging
+        }
+        
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail={
-                "error": "ProcessingError",
-                "message": "An error occurred while processing the image",
-                "detail": str(e) if os.getenv("LOG_LEVEL", "").upper() == "DEBUG" else None
-            }
+            detail=error_response
         )
 
 
