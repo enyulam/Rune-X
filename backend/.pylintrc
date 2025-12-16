@@ -1,0 +1,22 @@
+# Pylint configuration for Rune-X backend
+[MASTER]
+# Ignore import errors for src.* modules (they work at runtime with PYTHONPATH)
+ignore-imports=yes
+
+[MESSAGES CONTROL]
+# Disable specific warnings that are not critical
+disable=
+    import-error,          # src.* imports work at runtime
+    unused-import,          # Some imports are for type hints
+    logging-fstring-interpolation,  # f-strings in logging are fine
+    broad-exception-caught,  # We intentionally catch broad exceptions for error handling
+    raise-missing-from,     # Not critical for our use case
+    trailing-whitespace,     # Auto-formatters handle this
+    line-too-long,          # Allow longer lines for readability
+    wrong-import-order,     # Auto-formatters handle this
+    import-outside-toplevel,  # numpy import is intentional
+    unused-argument,        # Some arguments are required by FastAPI
+    global-statement        # Global variables are used for shared state
+
+[FORMAT]
+max-line-length=120
