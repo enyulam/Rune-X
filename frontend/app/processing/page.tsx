@@ -2,8 +2,8 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Button } from "@/components/ui/Button";
-import { Card } from "@/components/ui/Card";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 import { PageHeader } from "@/components/PageHeader";
 import { ProgressSpinner } from "@/components/ProgressSpinner";
 import { ProgressBar } from "@/components/ProgressBar";
@@ -55,34 +55,36 @@ export default function ProcessingPage() {
         description="We are extracting characters, meanings, and a full-sentence translation. This usually takes a few seconds."
       />
       <Card>
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
-          <ProgressSpinner />
-          <div className="min-w-0 flex-1">
-            <p className="text-base font-semibold text-gray-900 sm:text-lg">
-              Job ID: <span className="break-all font-mono text-primary">{jobId}</span>
-            </p>
-            <p className="mt-1 text-xs text-gray-600 sm:text-sm">
-              Polling the backend every second for completion status.
-            </p>
+        <CardContent className="pt-6">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
+            <ProgressSpinner />
+            <div className="min-w-0 flex-1">
+              <p className="text-base font-semibold sm:text-lg">
+                Job ID: <span className="break-all font-mono text-primary">{jobId}</span>
+              </p>
+              <p className="mt-1 text-xs text-muted-foreground sm:text-sm">
+                Polling the backend every second for completion status.
+              </p>
+            </div>
           </div>
-        </div>
 
-        <div className="mt-6 space-y-3 sm:mt-8">
-          <ProgressBar progress={progress} label="Progress" />
-          <p className="text-xs text-gray-500 sm:text-sm">
-            We will redirect you once processing completes.
-          </p>
-          {error && <p className="text-xs text-amber-700 sm:text-sm">{error}</p>}
-        </div>
+          <div className="mt-6 space-y-3 sm:mt-8">
+            <ProgressBar progress={progress} label="Progress" />
+            <p className="text-xs text-muted-foreground sm:text-sm">
+              We will redirect you once processing completes.
+            </p>
+            {error && <p className="text-xs text-destructive sm:text-sm">{error}</p>}
+          </div>
 
-        <div className="mt-6 flex flex-wrap gap-2 sm:mt-10 sm:gap-3">
-          <Button variant="secondary" type="button" onClick={() => router.push("/")}>
-            Start a new upload
-          </Button>
-          <Button type="button" onClick={() => router.refresh()}>
-            Refresh now
-          </Button>
-        </div>
+          <div className="mt-6 flex flex-wrap gap-2 sm:mt-10 sm:gap-3">
+            <Button variant="secondary" type="button" onClick={() => router.push("/")}>
+              Start a new upload
+            </Button>
+            <Button type="button" onClick={() => router.refresh()}>
+              Refresh now
+            </Button>
+          </div>
+        </CardContent>
       </Card>
     </main>
   );

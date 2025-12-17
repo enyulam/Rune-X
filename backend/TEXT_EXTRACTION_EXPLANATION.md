@@ -1,7 +1,7 @@
 # Text Extraction Logic Explanation
 
 ## Overview
-The text extraction system uses **PaddleOCR** to extract Chinese text from images, then processes each character to add pinyin pronunciation and English translations.
+The text extraction system uses **EasyOCR** to extract Chinese text from images, then processes each character to add pinyin pronunciation and English translations.
 
 ## Complete Flow
 
@@ -11,8 +11,8 @@ Image Bytes → PIL Image → RGB Conversion → NumPy Array
 ```
 - Receives raw image bytes from the upload
 - Converts to PIL Image for format validation
-- Ensures RGB color mode (required by PaddleOCR)
-- Converts to NumPy array (PaddleOCR's preferred input format)
+- Ensures RGB color mode (required by EasyOCR)
+- Converts to NumPy array (EasyOCR's preferred input format)
 
 **Code:**
 ```python
@@ -24,50 +24,43 @@ img_array = np.array(image)
 
 ### 2. OCR Processing (`ocr.py:74-86`)
 ```
-NumPy Array → PaddleOCR → OCR Results
+NumPy Array → EasyOCR → OCR Results
 ```
-- Calls PaddleOCR with the image array
-- Tries `cls=True` first (classification for text orientation)
+- Calls EasyOCR Reader with the image array
+- EasyOCR handles text detection and recognition automatically
 - Falls back to `cls=False` if parameter not supported
 - Returns structured OCR results
 
 **Code:**
 ```python
-try:
-    results = self.ocr.ocr(img_array, cls=True)
-except TypeError:
-    results = self.ocr.ocr(img_array)
+results = self.reader.readtext(img_array)
 ```
 
 ### 3. Result Parsing (`ocr.py:88-149`)
-This is the **most complex part** - PaddleOCR returns results in a nested structure:
+EasyOCR returns results in a simple list format:
 
-**PaddleOCR Response Format:**
+**EasyOCR Response Format:**
 ```python
 [
-    [  # First element contains all detected text lines
-        [[x1,y1], [x2,y2], [x3,y3], [x4,y4]], (text, confidence),  # Line 1
-        [[x1,y1], [x2,y2], [x3,y3], [x4,y4]], (text, confidence),  # Line 2
-        ...
-    ]
+    ([[x1,y1], [x2,y2], [x3,y3], [x4,y4]], text, confidence),  # Detection 1
+    ([[x1,y1], [x2,y2], [x3,y3], [x4,y4]], text, confidence),  # Detection 2
+    ...
 ]
 ```
 
 **Parsing Steps:**
-1. **Extract OCR data**: `results[0]` contains the actual OCR results
-2. **Iterate through lines**: Each line represents one detected text region
-3. **Extract text & confidence**: `line[1]` contains `(text, confidence)` tuple
-4. **Handle multiple formats**: Supports tuple, list, or dict formats for robustness
-5. **Build full text**: Concatenate all text from all lines
-6. **Character-level confidence**: Assign line confidence to each character
+1. **Iterate through detections**: Each element represents one detected text region
+2. **Extract components**: Each detection is `(bbox, text, confidence)`
+3. **Extract text & confidence**: Direct access to text and confidence values
+4. **Build full text**: Concatenate all text from all detections
+5. **Character-level confidence**: Assign detection confidence to each character
 
 **Code Flow:**
 ```python
-ocr_data = results[0]  # Get first element (contains all lines)
-for line in ocr_data:
-    text_info = line[1]  # Get (text, confidence) tuple
-    text = text_info[0]
-    confidence = text_info[1]
+for detection in results:
+    bbox = detection[0]  # Bounding box coordinates
+    text = detection[1]  # Extracted text
+    confidence = detection[2]  # Confidence score
     full_text += text  # Concatenate
     for char in text:
         char_confidence.append((char, confidence))  # Store per-character
@@ -119,9 +112,10 @@ For each character with confidence:
 
 ### ✅ Current Strengths
 1. **Robust error handling**: Multiple try/except blocks
-2. **Format flexibility**: Handles different PaddleOCR response formats
+2. **Format simplicity**: EasyOCR provides straightforward `[bbox, text, confidence]` format
 3. **Confidence validation**: Ensures confidence values are valid
 4. **Character-level tracking**: Maintains confidence per character
+5. **Chinese-only filtering**: Filters out non-Chinese characters to avoid noisy output
 
 ### ⚠️ Potential Issues
 
@@ -132,9 +126,9 @@ for char in text:
     char_confidence.append((char, confidence))  # Same confidence for all
 ```
 
-**Problem**: If PaddleOCR detects "学中文" with confidence 0.9, all three characters get 0.9, even though individual character recognition might differ.
+**Problem**: If EasyOCR detects "学中文" with confidence 0.9, all three characters get 0.9, even though individual character recognition might differ.
 
-**Impact**: Low - PaddleOCR typically provides line-level confidence, not character-level
+**Impact**: Low - EasyOCR typically provides detection-level confidence, not character-level
 
 #### Issue 2: Whitespace Handling
 **Current behavior**: Skips whitespace characters
@@ -163,7 +157,7 @@ for char, confidence in char_confidence:
 
 1. **Word-level processing**: Process segmented words instead of individual characters
 2. **Preserve whitespace**: Track spaces as separate entries or markers
-3. **Better confidence**: If PaddleOCR provides character-level confidence, use it
+3. **Better confidence**: If EasyOCR provides character-level confidence, use it
 4. **Context-aware translation**: Use word context for better English translations
 
 ## Example Flow
@@ -172,7 +166,7 @@ for char, confidence in char_confidence:
 
 **Step 1 - OCR**:
 ```
-PaddleOCR detects: [([[bbox]], ("学中文", 0.95))]
+EasyOCR detects: [(bbox, "学中文", 0.95)]
 ```
 
 **Step 2 - Parsing**:

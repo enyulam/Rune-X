@@ -1,5 +1,5 @@
 import axios from "axios";
-import toast from "react-hot-toast";
+import { toast } from "@/components/ui/use-toast";
 import { OCRResponse } from "@/types/ocr";
 
 const api = axios.create({
@@ -52,7 +52,11 @@ export async function submitImage(
         console.error("Backend error:", errorData);
       }
     }
-    toast.error(message);
+    toast({
+      variant: "destructive",
+      title: "Error",
+      description: message,
+    });
     throw error;
   }
 }
@@ -81,7 +85,11 @@ export async function fetchJobStatus(
     const message = axios.isAxiosError(error)
       ? error.response?.data?.message || error.response?.data?.detail?.message || "Unable to check job status."
       : "Unable to check job status.";
-    toast.error(message);
+    toast({
+      variant: "destructive",
+      title: "Error",
+      description: message,
+    });
     return { status: "failed" };
   }
 }
@@ -106,7 +114,11 @@ export async function fetchResult(imageId: string): Promise<OCRResponse> {
     const message = axios.isAxiosError(error)
       ? error.response?.data?.message || error.response?.data?.detail?.message || "Unable to load results. Please retry."
       : "Unable to load results. Please retry.";
-    toast.error(message);
+    toast({
+      variant: "destructive",
+      title: "Error",
+      description: message,
+    });
     throw error;
   }
 }

@@ -3,12 +3,13 @@ A lightweight, open-source MVP that recognizes Chinese handwriting or printed ch
 
 ## ✨ Features
 - Browser image upload
-- OCR using PaddleOCR (offline, free)
+- OCR using EasyOCR (offline, free, open-source)
 - Character-level dictionary lookup using CC-CEDICT
 - Word segmentation using jieba
 - Sentence-level translation using open-source MT models (Helsinki-NLP OPUS Chinese-English)
 - Backend in Python FastAPI
-- Frontend in React/Next.js
+- Frontend in Next.js with shadcn/ui components
+- Modern UI with Tailwind CSS v4 and dark mode support
 - Deployable on free-tier services (Railway/Render/Vercel)
 
 ## 🎯 MVP Goal
@@ -16,12 +17,12 @@ Provide a simple browser-based tool:
 Image → OCR → Chinese text → character meanings → full translation → context explanation.
 
 ## 🏗 Technology Stack
-- **OCR:** PaddleOCR (PP-OCRv4 Chinese)
+- **OCR:** EasyOCR (Chinese Simplified)
 - **Segmentation:** jieba
 - **Dictionary:** CC-CEDICT (open source)
 - **Translation:** Helsinki-NLP opus-mt-zh-en
 - **Backend:** FastAPI + Python
-- **Frontend:** Next.js / React
+- **Frontend:** Next.js 16 + React 19 + shadcn/ui + Tailwind CSS v4
 - **Storage:** Local filesystem (no DB needed for MVP)
 
 ## 📦 Installation
@@ -31,6 +32,7 @@ See backend/README.md and frontend/README.md for setup instructions.
 MIT License.
 
 ## 📚 Credits
-- PaddleOCR (https://github.com/PaddlePaddle/PaddleOCR)
+- EasyOCR (https://github.com/JaidedAI/EasyOCR)
 - CC-CEDICT Dictionary
 - HuggingFace Transformers
+- shadcn/ui components

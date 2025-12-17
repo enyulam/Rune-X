@@ -105,7 +105,7 @@ async def startup_event():
         ocr_processor = OCRProcessor(lang=PADDLE_LANG)
         logger.info(f"OCR processor initialized successfully with language: {PADDLE_LANG}")
     except ImportError as e:
-        logger.warning(f"PaddleOCR not available: {e}")
+        logger.warning(f"EasyOCR not available: {e}")
         ocr_processor = None
     except Exception as e:
         logger.error(f"Failed to initialize OCR processor: {e}", exc_info=True)
@@ -157,7 +157,7 @@ async def process_image(file: UploadFile = File(...)):
     Steps:
     1. Validate file (size, extension, MIME type)
     2. Save image to uploads directory
-    3. Run PaddleOCR for text extraction
+    3. Run EasyOCR for text extraction
     4. Segment text with jieba
     5. Generate pinyin and English translations for each character
     6. Translate full text using MarianMT
@@ -186,7 +186,7 @@ async def process_image(file: UploadFile = File(...)):
                 detail={
                     "error": "ServiceUnavailable",
                     "message": "OCR processor is not available",
-                    "detail": "PaddleOCR is not installed or failed to initialize"
+                    "detail": "EasyOCR is not installed or failed to initialize"
                 }
             )
         

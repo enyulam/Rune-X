@@ -1,7 +1,7 @@
 "use client";
 
 import { ChangeEvent, DragEvent, useCallback, useRef, useState } from "react";
-import { Button } from "@/components/ui/Button";
+import { Button } from "@/components/ui/button";
 
 type UploadDropzoneProps = {
   onFileSelected: (file: File) => void;
@@ -61,14 +61,14 @@ export function UploadDropzone({
     <div className="space-y-3">
       <div
         className={`flex flex-col items-center justify-center gap-3 rounded-2xl border-2 border-dashed px-4 py-8 text-center transition-colors sm:gap-4 sm:px-6 sm:py-12 ${
-          isDragging ? "border-primary bg-primary-light/50" : "border-gray-200 bg-white"
+          isDragging ? "border-primary bg-primary/10" : "border-border bg-background"
         } ${disabled ? "cursor-not-allowed opacity-70" : "cursor-pointer"}`}
         onDrop={handleDrop}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onClick={() => !disabled && inputRef.current?.click()}
       >
-        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary-light sm:h-12 sm:w-12">
+        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 sm:h-12 sm:w-12">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" className="sm:w-7 sm:h-7">
             <path
               d="M12 3v12m0-12 4 4m-4-4-4 4M4 15v3a3 3 0 0 0 3 3h10a3 3 0 0 0 3-3v-3"
@@ -80,8 +80,8 @@ export function UploadDropzone({
           </svg>
         </div>
         <div className="space-y-1">
-          <p className="text-base font-semibold text-gray-900 sm:text-lg">Drag & drop your image</p>
-          <p className="text-xs text-gray-600 sm:text-sm">
+          <p className="text-base font-semibold text-foreground sm:text-lg">Drag & drop your image</p>
+          <p className="text-xs text-muted-foreground sm:text-sm">
             JPG or PNG only. Max 10MB. We&apos;ll keep your file local while processing.
           </p>
         </div>
@@ -98,7 +98,7 @@ export function UploadDropzone({
         />
       </div>
       {(localError || error) && (
-        <p className="text-xs text-amber-700 sm:text-sm">{localError ?? error}</p>
+        <p className="text-xs text-destructive sm:text-sm">{localError ?? error}</p>
       )}
     </div>
   );

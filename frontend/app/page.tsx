@@ -2,14 +2,14 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { Button } from "@/components/ui/Button";
-import { Card } from "@/components/ui/Card";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { UploadDropzone } from "@/components/UploadDropzone";
 import { PageHeader } from "@/components/PageHeader";
 import { HowItWorks } from "@/components/HowItWorks";
 import { UploadTips } from "@/components/UploadTips";
 import { submitImage } from "@/services/api";
-import toast from "react-hot-toast";
+import { toast } from "@/components/ui/use-toast";
 
 const toDataUrl = (file: File) =>
   new Promise<string>((resolve, reject) => {
@@ -30,7 +30,11 @@ export default function Home() {
 
   const handleUpload = async () => {
     if (!selectedFile) {
-      toast.error("Please select an image to continue.");
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Please select an image to continue.",
+      });
       return;
     }
     setIsUploading(true);
@@ -59,35 +63,39 @@ export default function Home() {
           title="Upload Chinese handwriting or print. Get instant text & translation."
           description="Drag an image into the dropzone and we will extract text, meanings, and full sentence translations. No signup required."
         />
-        <Card
-          title="Upload an image"
-          subtitle="Supports JPG and PNG. Your file stays private."
-          actions={
-            selectedFile && (
-              <span className="rounded-full bg-primary-light px-2 py-0.5 text-xs font-semibold text-primary sm:px-3 sm:py-1">
-                {selectedFile.name}
-              </span>
-            )
-          }
-          className="p-2"
-        >
-          <UploadDropzone
-            onFileSelected={handleFileSelected}
-            disabled={isUploading}
-          />
-          <div className="mt-4 flex flex-wrap gap-2 sm:mt-6 sm:gap-3">
-            <Button onClick={handleUpload} disabled={isUploading} loading={isUploading}>
-              {isUploading ? "Uploading..." : "Process image"}
-            </Button>
-            <Button
-              variant="secondary"
-              type="button"
-              onClick={() => setSelectedFile(null)}
+        <Card className="p-2">
+          <CardHeader>
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
+              <div>
+                <CardTitle>Upload an image</CardTitle>
+                <CardDescription>Supports JPG and PNG. Your file stays private.</CardDescription>
+              </div>
+              {selectedFile && (
+                <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-semibold text-primary sm:px-3 sm:py-1">
+                  {selectedFile.name}
+                </span>
+              )}
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <UploadDropzone
+              onFileSelected={handleFileSelected}
               disabled={isUploading}
-            >
-              Clear selection
-            </Button>
-          </div>
+            />
+            <div className="flex flex-wrap gap-2 sm:gap-3">
+              <Button onClick={handleUpload} disabled={isUploading}>
+                {isUploading ? "Uploading..." : "Process image"}
+              </Button>
+              <Button
+                variant="secondary"
+                type="button"
+                onClick={() => setSelectedFile(null)}
+                disabled={isUploading}
+              >
+                Clear selection
+              </Button>
+            </div>
+          </CardContent>
         </Card>
         <HowItWorks />
       </section>

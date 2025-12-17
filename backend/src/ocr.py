@@ -16,7 +16,7 @@ except ImportError:
 
 class OCRProcessor:
     """
-    Handles OCR processing using PaddleOCR.
+    Handles OCR processing using EasyOCR.
     
     Provides error handling and logging for OCR operations.
     """
@@ -30,14 +30,14 @@ class OCRProcessor:
                   map this to the appropriate language code list.
             
         Raises:
-            ImportError: If PaddleOCR is not installed
+            ImportError: If EasyOCR is not installed
             Exception: If initialization fails
         """
         if easyocr is None:
             raise ImportError("EasyOCR is not installed. Install it with: pip install easyocr")
         
         try:
-            # Map PaddleOCR-style language code to EasyOCR codes
+            # Map language code to EasyOCR codes
             # 'ch' (simplified Chinese) -> 'ch_sim'
             lang_codes = ["ch_sim"]
             # If needed in future, we could support traditional Chinese with 'ch_tra'
@@ -147,7 +147,7 @@ class OCRProcessor:
             
             filtered_text = "".join(chinese_chars)
             if not filtered_text:
-                # If PaddleOCR produced only non-Chinese text, treat as "no text"
+                # If EasyOCR produced only non-Chinese text, treat as "no text"
                 if full_text:
                     logger.warning(
                         "OCR produced text but no Chinese characters after filtering. "
